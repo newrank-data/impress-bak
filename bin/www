@@ -3,12 +3,8 @@
 const app = require('../app');
 const debug = require('debug')('impress:server');
 const http = require('http');
-const fs = require('fs');
 const schedule = require('node-schedule');
-const chinaz = require('../modules/chinaz.js');
-const cz = Object.create(chinaz);
-const portals = JSON.parse(fs.readFileSync('public/data/portals.json'));
-
+const portalupdate = require('../scripts/portal.js');
 
 // 创建服务器并挂载到 3005 端口
 const port = normalizePort(process.env.PORT || '3005');
@@ -22,34 +18,9 @@ server.on('listening', onListening);
 
 
 // 设置定时任务
-const scheduleTime = '* */1 * * *';
+const scheduleTime = '*/1 * * * *';
 schedule.scheduleJob(scheduleTime, function () {
-  let i = 0;
-  updateRecords();
-
-  function updateRecords () {
-    const portal = portals[i];
-    cz.getRecord(portal.site, function (reply) {
-      
-      if (reply.status == 1) {
-        portal.records.push(reply.record);
-  
-        if (portal.records.length > 30) {
-          portal.records = portal.records.sort((a, b) => a < b);
-          portal.records = portal.records.slice(portal.records.length - 30);
-        }
-  
-      } else {
-      }
-      
-      i += 1;
-      if (i == 4) {
-        fs.writeFileSync('public/data/portals.json', JSON.stringify(portals));
-      } else {
-        setTimeout(updateRecords, 10000);
-      }
-    })
-  }
+  portalupdate();
 });
 
 
@@ -95,4 +66,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+  console.log('Listening on port 3005.');
 }
