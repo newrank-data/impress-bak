@@ -4,7 +4,8 @@ const app = require('../app');
 const debug = require('debug')('impress:server');
 const http = require('http');
 const schedule = require('node-schedule');
-const portalUpdate = require('../scripts/portal_update.js');
+const portalUpdateRecord = require('../scripts/portal_update_record.js');
+const portalUpdateLink = require('../scripts/portal_update_link.js');
 
 // 创建服务器并挂载到 3005 端口
 const port = normalizePort(process.env.PORT || '3005');
@@ -18,9 +19,16 @@ server.on('listening', onListening);
 
 
 // 设置定时任务
-const scheduleTime = '*/15 * * * *';
-schedule.scheduleJob(scheduleTime, function () {
-  portalUpdate();
+// 更新门户网站新闻频道百度收录数
+const scheduleTime1 = '*/1 * * * *';
+schedule.scheduleJob(scheduleTime1, function () {
+  portalUpdateRecord();
+});
+
+// 更新门户网站新闻频道首页链接数
+const scheduleTime2 = '*/1 * * * *';
+schedule.scheduleJob(scheduleTime2, function () {
+  portalUpdateLink();
 });
 
 

@@ -56,7 +56,7 @@ module.exports = function () {
   
             if (!err) {
               doc.records.push(el.new_record);
-              const new_records = doc.records.sort((a, b) => a < b).slice(doc.records.length == 31 ? 1 : 0);
+              const new_records = doc.records.sort((a, b) => a < b).slice(doc.records.length == 361 ? 1 : 0);
 
               db.collection('portals').updateOne({site: el.site}, {$set: {records: new_records}}, err => {
                 counter ++;
