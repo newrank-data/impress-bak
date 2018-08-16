@@ -4,7 +4,7 @@ const app = require('../app');
 const debug = require('debug')('impress:server');
 const http = require('http');
 const schedule = require('node-schedule');
-const portalupdate = require('../scripts/portal.js');
+const portalUpdate = require('../scripts/portal_update.js');
 
 // 创建服务器并挂载到 3005 端口
 const port = normalizePort(process.env.PORT || '3005');
@@ -18,9 +18,9 @@ server.on('listening', onListening);
 
 
 // 设置定时任务
-const scheduleTime = '*/1 * * * *';
+const scheduleTime = '*/15 * * * *';
 schedule.scheduleJob(scheduleTime, function () {
-  portalupdate();
+  portalUpdate();
 });
 
 
