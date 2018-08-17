@@ -6,6 +6,7 @@ const http = require('http');
 const schedule = require('node-schedule');
 const portalUpdateRecord = require('../scripts/portal_update_record.js');
 const portalUpdateLink = require('../scripts/portal_update_link.js');
+const subdomainlUpdateRecord = require('../scripts/subdomain_update_record.js');
 
 // 创建服务器并挂载到 3005 端口
 const port = normalizePort(process.env.PORT || '3005');
@@ -29,6 +30,12 @@ schedule.scheduleJob(scheduleTime1, function () {
 const scheduleTime2 = '* 0 * * *';
 schedule.scheduleJob(scheduleTime2, function () {
   portalUpdateLink();
+});
+
+// 更新子域名百度收录数
+const scheduleTime3 = '*/1 * * * *';
+schedule.scheduleJob(scheduleTime3, function () {
+  subdomainlUpdateRecord();
 });
 
 
