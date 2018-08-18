@@ -24,7 +24,7 @@ module.exports = function () {
               'record_update': Math.floor(Date.now() / 1000)
             }}, err => { 
               if (!err) {
-                const re = /^[m|big5|mail|search|oa]\./i;
+                const re = /^m|big5|mail|search|oa\./i;
                 subdomains_data = doc.details.subdomains_data.filter(v => !re.test(v.subdomain) && v.subdomain != doc.domain && v.subdomain != 'OTHER');
                 console.log(`\n${doc.domain}: ${subdomains_data.length}`);
 
