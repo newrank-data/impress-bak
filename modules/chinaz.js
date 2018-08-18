@@ -13,16 +13,16 @@ const chinaz = {
           this.cookie = [];
           this.cookie.push(res.headers['set-cookie'][0]);
           callback({status: 1});
-
+          
         } else {
           callback({status: 1001, msg: 'error: get cookie'});
         }
       }.bind(this));
-  },
-
-
-  getPram: function (callback) {
-    superagent
+    },
+    
+    
+    getPram: function (callback) {
+      superagent
       .post(encodeURI(`http://tool.chinaz.com/Seos/Sites.aspx?host=${this.site}`))
       .set('Content-Type', 'application/x-www-form-urlencoded')
       .set('Cookie', this.cookie[0])
@@ -30,6 +30,7 @@ const chinaz = {
       .set('Origin', 'http://tool.chinaz.com')
       .set('Referer', 'http://tool.chinaz.com/Seos/Sites.aspx')
       .set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36')
+      .timeout({response: 15000, deadline: 20000})
       .end(function (err, res) {
         
         const re = /enkey=(\w+)\&dn=.*\&websiteid=(\d+)\'/;
@@ -71,7 +72,19 @@ const chinaz = {
                 const re2 = /查询失败/;
 
                 if (!err && re1.test(res.text) && !re2.test(res.text)) {
-                  callback({status: 1, record: re1.exec(res.text)[1]});
+                  const str = re1.exec(res.text)[1];
+                  let record = 0;
+
+                  if (/万$/.test(str)) {
+                    record = parseInt(str);
+                  } else if (/^\d+$/.test(str)) {
+                    record = parseInt(str) / 10000;
+                  } else {
+                    const nums = str.split('万');
+                    record = parseInt(nums[0]) + parseInt(nums[1]) / 10000;
+                  }
+
+                  callback({status: 1, record: record});
 
                 } else {
                   callback({status: 1003, msg: 'error: get record'});

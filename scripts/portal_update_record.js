@@ -29,7 +29,7 @@ module.exports = function () {
       }
       
       cz.getRecord(site, reply => {
-        const new_record = reply.status == 1 ? parseInt(reply.record) : 0;
+        const new_record = reply.status == 1 ? reply.record : 0;
         
         if (new_record) {
           inserts.push({ site: site, new_record: new_record});
