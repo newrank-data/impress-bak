@@ -33,7 +33,7 @@ module.exports = function () {
                 'record_update': Math.floor(Date.now() / 1000)
               }}, err => {
                 if (!err) {
-                  const re = /^m|big5|mail|search|oa|3g\./i;
+                  const re = /^m|big5|mail|search|oa|3g|app|wap|account|hr|cms\./i;
                   datas = doc.details.subdomains_data.filter(
                     v => !re.test(v.subdomain) && v.subdomain != doc.domain && v.subdomain != 'OTHER'
                   );
@@ -75,11 +75,11 @@ module.exports = function () {
                       $set: {records: new_records}
                     }, () => {
                       i++;
-                      if (i == subdomains_data.length) {
-                        db.close();
+                      if (i == count) {
+                        switchDomain()
                       } else {
                         setTimeout(() => {
-                          updateRecords(i);
+                          updateSubdomainRecord();
                         }, 5000);
                       }
                     });
