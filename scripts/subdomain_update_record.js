@@ -22,6 +22,7 @@ module.exports = function () {
         let datas = [];
         let i = 0;
         let count = 0;
+        let domain = '';
         const cursor = db.collection('alexa').find(query).sort({'record_update': 1}).limit(1);
   
         cursor.nextObject((err, doc) => {
@@ -34,6 +35,7 @@ module.exports = function () {
               }}, err => {
                 if (!err) {
                   const re = /^m|big5|mail|search|oa|3g|app|wap|account|hr|cms\./i;
+                  domain = doc.domain;
                   datas = doc.details.subdomains_data.filter(
                     v => !re.test(v.subdomain) && v.subdomain != doc.domain && v.subdomain != 'OTHER'
                   );
@@ -72,7 +74,7 @@ module.exports = function () {
                     db.collection('subdomains').updateOne({
                       _id: ObjectId(doc._id)
                     }, {
-                      $set: {records: new_records}
+                      $set: {domain: domain, records: new_records}
                     }, () => {
                       i++;
                       if (i == count) {
@@ -90,6 +92,7 @@ module.exports = function () {
   
                     db.collection('subdomains').insertOne({
                       subdomain: data.subdomain,
+                      domain: domain,
                       records: [reply.record]
                     }, () => {
                       i++;
