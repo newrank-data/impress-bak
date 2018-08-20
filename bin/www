@@ -21,13 +21,13 @@ server.on('listening', onListening);
 
 // 设置后台任务
 // 更新门户网站新闻频道百度收录数
-const scheduleTime1 = '*/15 * * * *';
+const scheduleTime1 = '0 * * * *';
 schedule.scheduleJob(scheduleTime1, function () {
   portalUpdateRecord();
 });
 
 // 更新门户网站新闻频道首页链接数
-const scheduleTime2 = '* 0 * * *';
+const scheduleTime2 = '5 * * * *';
 schedule.scheduleJob(scheduleTime2, function () {
   portalUpdateLink();
 });

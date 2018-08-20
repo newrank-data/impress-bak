@@ -1,8 +1,7 @@
 require('dotenv').config();
 const MongoClient = require('mongodb').MongoClient;
 const MONGODB_URI = process.env.MONGODB_URI;
-const chinaz = require('../modules/chinaz.js');
-const cz = Object.create(chinaz);
+const BaiduRecord = require('../modules/baidu-record.js');
 
 module.exports = function () {
   MongoClient.connect(MONGODB_URI, (err, db) => {
@@ -28,7 +27,7 @@ module.exports = function () {
           site = 'news.sohu.com';
       }
       
-      cz.getRecord(site, reply => {
+      BaiduRecord(site, reply => {
         const new_record = reply.status == 1 ? reply.record : 0;
         
         if (new_record) {
