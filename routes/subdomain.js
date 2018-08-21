@@ -29,6 +29,7 @@ router.get('/', (req, res) => {
 
                 return {
                   subdomain: doc.subdomain,
+                  domain: doc.domain,
                   record: avg_record,
                   link: est_link
                 }

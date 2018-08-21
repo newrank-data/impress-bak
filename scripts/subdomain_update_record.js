@@ -37,7 +37,7 @@ module.exports = function () {
                 
                 // 剔除与内容无关的子域名
                 if (!err) {
-                  const re = /^m|big5|mail|search|oa|3g|app|wap|account|hr|cms|open|passport|login|auth\./i;
+                  const re = /^m|big5|mail|search|oa|3g|app|wap|account|hr|cms|open|passport|login|auth|user\./i;
                   domain = doc.domain;
                   datas = doc.details.subdomains_data.filter(
                     v => !re.test(v.subdomain) && v.subdomain != doc.domain && v.subdomain != 'OTHER'
