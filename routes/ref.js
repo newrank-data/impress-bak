@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const PortalGenerateFactor = require('../scripts/portal_generate_factor.js');
+const PortalGenerateFactor = require('../scripts/portal_generate_ref.js');
 
 router.get('/', (req, res) => {
 

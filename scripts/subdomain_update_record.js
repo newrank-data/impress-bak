@@ -8,12 +8,14 @@ module.exports = function () {
   MongoClient.connect(MONGODB_URI, (err, db) => {
     if (!err) {
 
-      // 筛选出更新时间最旧且子域名数量不为 0 的一个主域名进行循环更新
+      // 筛选出更新时间最旧且子域名数量不为 0 且存在最近 3 个月日均 PV 的一个主域名进行循环更新
       const query = {
         $and: [{
-          'details.subdomains_data': {$exists: 1},
+          'details.subdomains_data': {$exists: 1}
         }, {
           'details.subdomains_data': {$not: {$size: 0}}
+        }, {
+          'details.traffic_data.three_month': {$exists: 1}
         }]};
 
       switchDomain();
@@ -37,14 +39,12 @@ module.exports = function () {
                 
                 // 剔除与内容无关的子域名
                 if (!err) {
-                  const re = /^m|big5|mail|search|oa|3g|app|wap|account|hr|cms|open|passport|login|auth|user\./i;
+                  const re = /^m|big5|mail|search|so|oa|3g|app|wap|account|hr|cms|open|passport|login|auth|user|api|apk\./i;
                   domain = doc.domain;
                   datas = doc.details.subdomains_data.filter(
                     v => !re.test(v.subdomain) && v.subdomain != doc.domain && v.subdomain != 'OTHER'
                   );
 
-                  console.log(`\n${doc.domain}: ${datas.length}`);
-                  
                   // 剔除后子域名数量不为 0 时调用接口查询百度收录数
                   if (datas.length) {
                     count = datas.length;
@@ -86,8 +86,6 @@ module.exports = function () {
                       $set: {records: new_records}
                     }, () => {
                       
-                      console.log(`√ [${i}]${data.subdomain}`);
-
                       if (++i == count) {
                         switchDomain()
 
@@ -107,8 +105,6 @@ module.exports = function () {
                       records: [reply.record]
                     }, () => {
                       
-                      console.log(`√ [${i + 1}]${data.subdomain}`);
-
                       if (++i == count) {
                         switchDomain();
 
@@ -133,7 +129,6 @@ module.exports = function () {
               });
           
             } else {
-              console.log(`× [${i + 1}]${data.subdomain}`);
               if (++i == count) {
                 switchDomain();
 

@@ -21,10 +21,17 @@ module.exports = function (callback) {
               avg_link: avg_link
             }
           });
-  
-          const factor = avgs.reduce((acc, cv) => acc + (cv.avg_record * 0.2 / cv.avg_link) * 0.25, 0);
+
+          const record = avgs.reduce((acc, cv) => acc + cv.avg_record * 0.25, 0);
+          const link = avgs.reduce((acc, cv) => acc + cv.avg_link * 0.25, 0);
+          const factor = avgs.reduce((acc, cv) => acc + (cv.avg_record / (cv.avg_link * 4)) * 0.25, 0);
           db.close();
-          callback({status: 1, factor: parseFloat(factor.toFixed(2))});
+          callback({
+            status: 1,
+            record: parseInt(record),
+            link: parseInt(link),
+            factor: parseFloat(factor.toFixed(2))
+          });
   
         } else {
           db.close();
