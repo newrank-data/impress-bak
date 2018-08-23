@@ -19,12 +19,16 @@ module.exports = function () {
           reply.data.forEach(el => {
             el.sub.forEach(sub_el => {
   
-              sub_el.dieoff = Math.log(sub_el.record) / ref_record;
-              sub_el.factor = Math.pow(sub_el.dieoff, 2) * ref_factor;
+              sub_el.dieoff = Math.pow(Math.log(sub_el.record) / ref_record, 2);
+              sub_el.factor = sub_el.dieoff * ref_factor;
               sub_el.link = sub_el.record / sub_el.factor;
   
               if (sub_el.link >= 5) {
-                sub_el.impress = parseFloat((sub_el.pv * 0.2 / sub_el.link * 0.8).toFixed(2));
+                const dieoff_impress = (sub_el.pv / sub_el.link) * (1 - sub_el.dieoff);
+                const min_impress = sub_el.pv * 0.2 / sub_el.link * 0.8;
+                sub_el.impress = parseFloat(
+                  (dieoff_impress > min_impress ? dieoff_impress : min_impress).toFixed(2)
+                );
 
                 if (sub_el.impress >= 10 && sub_el.impress <= 10000) {
                   data.push(sub_el);
@@ -34,14 +38,14 @@ module.exports = function () {
           });
   
           const table = data.map(el => {
-            return `${el.subdomain}, ${el.record}, ${el.percentage}, ${el.pv}, ${el.factor}, ${el.link}, ${el.dieoff}, ${el.impress}`;
+            return `${el.subdomain}, ${el.record}, ${el.pv}, ${el.factor}, ${el.link}, ${el.dieoff}, ${el.impress}`;
           });
           
           if (!fs.existsSync('public/files')) {
             fs.mkdirSync('public/files');
           }
   
-          const headers = 'subdomain, record, percentage, pv, factor, link, dieoff, impress\n';
+          const headers = 'subdomain, record, pv, factor, link, dieoff, impress\n';
       
           fs.writeFileSync('public/files/subdomain.csv', headers + table.join('\n'));
           
