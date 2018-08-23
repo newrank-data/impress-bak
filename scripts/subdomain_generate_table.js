@@ -25,7 +25,10 @@ module.exports = function () {
   
               if (sub_el.link >= 5) {
                 sub_el.impress = parseFloat((sub_el.pv * 0.2 / sub_el.link * 0.8).toFixed(2));
-                data.push(sub_el);
+
+                if (sub_el.impress >= 10 && sub_el.impress <= 10000) {
+                  data.push(sub_el);
+                }
               }
             });
           });

@@ -67,7 +67,7 @@ module.exports = function () {
           const data = datas[i];
           BaiduRecord(data.subdomain, reply => {
           
-            if (reply.status == 1) {
+            if (reply.status == 1 && reply.record != 1) {
               const cursor = db.collection('subdomains').find({subdomain: data.subdomain});
 
               cursor.nextObject((err, doc) => {
