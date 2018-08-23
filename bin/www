@@ -37,7 +37,7 @@ schedule.scheduleJob(scheduleTime2, function () {
 subdomainUpdateRecord();
 
 // 生成子域名数据表
-const scheduleTime3 = '15 * * * *';
+const scheduleTime3 = '*/15 * * * *';
 schedule.scheduleJob(scheduleTime3, function () {
   SubdomainGenerateTable();
 });
