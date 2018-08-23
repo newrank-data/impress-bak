@@ -13,7 +13,7 @@ module.exports = function (callback) {
         if (!err) {
           const avgs = docs.map(doc => {
             const avg_record = doc.records.reduce((acc, cv) => acc + cv, 0) / doc.records.length;
-            const avg_link = doc.links.reduce((acc, cv) => acc + cv, 0) * 4 / doc.links.length;
+            const avg_link = doc.links.reduce((acc, cv) => acc + cv, 0) * 5 / doc.links.length;
             
             return {
               site: doc.site,

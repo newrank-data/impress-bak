@@ -7,9 +7,7 @@ PortalGenerateRef(reply => {
   if (reply.status == 1) {
 
     const ref_record = Math.log(reply.record);
-    const ref_link = reply.link;
     const ref_factor = reply.factor;
-    const ref_acceleration = reply.acceleration;
     
     SubdomainGenerateList(reply => {
       
