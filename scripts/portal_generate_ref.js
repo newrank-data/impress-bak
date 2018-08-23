@@ -13,7 +13,7 @@ module.exports = function (callback) {
         if (!err) {
           const avgs = docs.map(doc => {
             const avg_record = doc.records.reduce((acc, cv) => acc + cv, 0) / doc.records.length;
-            const avg_link = doc.links.reduce((acc, cv) => acc + cv, 0) / doc.links.length;
+            const avg_link = doc.links.reduce((acc, cv) => acc + cv, 0) * 4 / doc.links.length;
             
             return {
               site: doc.site,
@@ -24,13 +24,16 @@ module.exports = function (callback) {
 
           const record = avgs.reduce((acc, cv) => acc + cv.avg_record * 0.25, 0);
           const link = avgs.reduce((acc, cv) => acc + cv.avg_link * 0.25, 0);
-          const factor = avgs.reduce((acc, cv) => acc + (cv.avg_record / (cv.avg_link * 4)) * 0.25, 0);
+          const factor = avgs.reduce((acc, cv) => acc + (cv.avg_record / cv.avg_link) * 0.25, 0);
+          const acceleration = 2 / Math.pow(link, 2);
+
           db.close();
           callback({
             status: 1,
             record: parseInt(record),
             link: parseInt(link),
-            factor: parseFloat(factor.toFixed(2))
+            factor: parseFloat(factor.toFixed(2)),
+            acceleration: acceleration
           });
   
         } else {
