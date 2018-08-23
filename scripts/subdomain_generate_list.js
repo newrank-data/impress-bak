@@ -68,7 +68,7 @@ module.exports = function (callback) {
       const cursor = db.collection('alexa').find({domain: el.domain}).limit(1);
       cursor.nextObject((err, doc) => {
 
-        if (!err && doc && doc.traffic) {
+        if (!err && doc && doc.details.traffic_data) {
           const traffic = doc.details.traffic_data;
           const pv = parseInt(
             traffic.three_month.avg_daily_pv || (
