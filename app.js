@@ -5,7 +5,7 @@ const logger = require('morgan');
 
 const indexRouter = require('./routes/index');
 const refRouter = require('./routes/ref');
-const subdomainRouter = require('./routes/subdomain');
+// const subdomainRouter = require('./routes/subdomain');
 
 const app = express();
 
@@ -17,6 +17,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/ref', refRouter);
-app.use('/subdomain', subdomainRouter);
+// app.use('/subdomain', subdomainRouter);
 
 module.exports = app;
