@@ -51,3 +51,7 @@ ul {
   border-radius: 4px;
   padding: 20px 34px;
 }
+
+li.error {
+  color: #fb4747;
+}

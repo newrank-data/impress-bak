@@ -35,7 +35,7 @@
         </div>
         <div>
           <ul style="border: 1px solid #dddddd;">
-            <li v-for="log in logs">{{log}}</li>
+            <li v-for="log in logs" :class="{error: log.err}">{{log.text}}</li>
           </ul>
         </div>
       </div>
@@ -88,12 +88,16 @@
           this.pushLog('开始处理...');
           rebuildDB();
         },
-        assembleLog: function (text) {
+        assembleLog: function (text, err) {
           const ct = new Date().toLocaleTimeString('zh-CN', {hour12: false});
-          return `[ ${ct} ] ~ ${text}`;
+          text = `[ ${ct} ] ~ ${text}`;
+          return {
+            text: text,
+            err: err
+          };
         },
-        pushLog: function (text) {
-          this.logs.push(this.assembleLog(text));
+        pushLog: function (text, err = false) {
+          this.logs.push(this.assembleLog(text, err));
         }
       },
       created: function () {
@@ -108,11 +112,11 @@
       const DBDeleteRequest = window.indexedDB.deleteDatabase('newrank');
 
       DBDeleteRequest.onerror = function (e) {
-        app.pushLog('× 重建本地数据库失败');
+        app.pushLog('× 清空本地数据库失败');
+        console.log(e);
       }
       
       DBDeleteRequest.onsuccess = function (e) {
-        app.pushLog('重建本地数据库');
         parseSheet();
       }
     }
@@ -224,7 +228,7 @@
           const row = {};
           row.url_crc = sheet[url_crc_key + i.toString()].v;
           row.url = sheet[url_key + i.toString()].v;
-          row.source_type = sheet[source_type_key + i.toString()].v;
+          row.source_type = parseInt(sheet[source_type_key + i.toString()].v);
           row.author = sheet[author_key + i.toString()] ? sheet[author_key + i.toString()].v : '';
           row.media_name = sheet[media_name_key + i.toString()].v;
           row.original_media_name = sheet[original_media_name_key + i.toString()] ? sheet[original_media_name_key + i.toString()].v : '';
@@ -287,21 +291,58 @@
         }
       }
 
-      console.log(datas.t_data);
       app.pushLog('写入数据库...');
-      // insertDB(datas.t_data);
+      insertDB(datas.t_data);
     }
     
     function insertDB (datas) {
-      console.log(datas);
       const request = window.indexedDB.open('newrank', 1);
       
       request.onerror = function (e) {
-        app.pushLog('打开本地数据库失败，请刷新重试');
+        app.pushLog('打开本地数据库失败，请刷新重试', true);
+        console.log(e);
       }
 
-      request.onsuccess = function (e) {
+      request.onupgradeneeded = function (e) {
+        const db = e.target.result;
+        const objectStore = db.createObjectStore('impress', {keyPath: 'url_crc'});
+
+        objectStore.createIndex('source_type', 'source_type', {unique: false});
+        objectStore.createIndex('click_count', 'click_count', {unique: false});
+        objectStore.createIndex('comments_count', 'comments_count', {unique: false});
+        
+        objectStore.transaction.oncomplete = function (e) {
+          const transaction = db.transaction('impress', 'readwrite');
+          const impressObjectStore = transaction.objectStore('impress');
+
+          transaction.onerror = function (e) {
+            app.pushLog('写入数据库失败', true);
+          }
+
+          transaction.oncomplete = function (e) {
+            db.close();
+            lanchImp();
+          }
           
+          datas.forEach(function (data) {
+            impressObjectStore.add(data);
+          });
+        }
+      }
+    }
+
+    function lanchImp () {
+      const imp = new Worker('../scripts/imp.js');
+
+      imp.onmessage = function (e) {
+        const msg = e.data;
+
+        if (typeof msg == 'string') {
+          app.pushLog(msg);
+
+        } else {
+          app.pushLog(msg.text, msg.flag);
+        }
       }
     }
   </script>
