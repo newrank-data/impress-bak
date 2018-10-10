@@ -34,7 +34,7 @@
           </div>
         </div>
         <div>
-          <ul style="border: 1px solid #dddddd;">
+          <ul id="logs" ref="logs" style="border: 1px solid #dddddd;">
               <li v-for="log in logs" :class="{error: log.err}">{{log.text}}</li>
             </ul>
           </div>
@@ -118,9 +118,12 @@
 
           // 创建 Worker 来处理计算任务，防止主线程卡住
           const imp = new Worker('scripts/imp.js')
+
+          // 监听 Worker 发送的消息并处理
           imp.onmessage = function (e) {
             const msg = e.data;
-
+            
+            // 收到 terminate 消息时注销 Worker
             if (msg == 'terminate') {
               imp.terminate();
               clearInterval(itv);
@@ -166,14 +169,14 @@
         generateFile: async function () {
           // 读取本地数据库中已经计算好的数据，创建 csv 并生成 url
           const db = await new Dexie('newrank').open();
-              db.table('impress')
-                .toArray(function (rows) {
-                  rows = rows.map(row => `\n${row.url_crc}, ${row.impress}`).join('');
-                  const outputBlob = new Blob(['url_crc,impress' + rows]);
-                  this.downlaodUrl = URL.createObjectURL(outputBlob);
-                  this.disableOutput = false;
-                  this.pushLog('🎉计算结束，点击“导出”下载数据进行后续处理');
-                }.bind(this));
+          db.table('impress')
+          .toArray(function (rows) {
+            rows = rows.map(row => `\n${row.url_crc}, ${row.impress}`).join('');
+            const outputBlob = new Blob(['url_crc,impress' + rows]);
+            this.downlaodUrl = URL.createObjectURL(outputBlob);
+            this.disableOutput = false;
+            this.pushLog('🎉计算结束，点击“导出”下载数据进行后续处理');
+          }.bind(this));
         },
         handleOutput: function () {
           
@@ -181,7 +184,6 @@
           const a = document.createElement('a');
           a.href = this.downlaodUrl;
           a.download = 'impress.csv';
-          console.log(a);
           a.click();
           URL.revokeObjectURL(this.downlaodUrl);
         }
@@ -189,8 +191,11 @@
       created: function () {
         if (!window.indexedDB) {
           this.disabledChoose = true;
-          this.pushLog('浏览器不支持本地数据库，请更换最新版 Chrome 或 Firefox');
+          this.pushLog('浏览器不支持本地数据库，请更换为 Chrome');
         }
+      },
+      updated: function () {
+        this.$refs.logs.scrollTop = this.$refs.logs.scrollHeight - 240;
       }
     });
   </script>

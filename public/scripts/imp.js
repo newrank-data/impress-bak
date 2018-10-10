@@ -37,7 +37,7 @@ function parseSheet (books) {
     }
   });
 
-  postMessage('匹配 data/dpt 表');
+  postMessage(`匹配 data/dpt 表，共 ${sheets.t_data.length} 条记录`);
   matchSheets(sheets);
 }
 
@@ -344,8 +344,7 @@ function calculateNotApp () {
             }
           }
           
-        } else {
-          lastDomain = row.domain;
+        } else if (currentDetails.domain == row.domain) {
           matchDomianDetails(row, currentDetails);
           i += 1;
           
@@ -355,10 +354,26 @@ function calculateNotApp () {
           } else {
             postMessage(`${alexaNotFound.length} 个域名在 alexa 表中无数据`);
             impDB.impress
-              .bulkPut(rows)
-              .then(() => {
-                calculateApp();
-              });
+            .bulkPut(rows)
+            .then(() => {
+              calculateApp();
+            });
+          }
+
+        } else {
+          row.impress = 10;
+          i += 1;
+
+          if (i < rows.length) {
+            matchSubdomains();
+
+          } else {
+            postMessage(`${alexaNotFound.length} 个域名在 alexa 表中无数据`);
+            impDB.impress
+            .bulkPut(rows)
+            .then(() => {
+              calculateApp();
+            });
           }
         }
       }
