@@ -9,7 +9,7 @@ router.get('/:domain', (req, res) => {
   const domain = req.params.domain.trim();
 
   try {
-    const ref = JSON.parse(fs.readFileSync('public/files/ref.json'));
+    const ref = JSON.parse(fs.readFileSync('public/ref.json'));
 
     try {
       MongoClient.connect(MONGODB_URI, (err, db) => {
