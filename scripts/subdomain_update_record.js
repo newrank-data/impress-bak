@@ -42,7 +42,7 @@ module.exports = function () {
                   const re = /^m|big5|mail|search|so|oa|3g|app|wap|account|hr|cms|open|passport|login|auth|user|api|apk\./i;
                   domain = doc.domain;
                   datas = doc.details.subdomains_data.filter(
-                    v => !re.test(v.subdomain) && v.subdomain != doc.domain && v.subdomain != 'OTHER'
+                    v => !re.test(v.subdomain) && v.subdomain != 'OTHER'
                   );
 
                   // 剔除后子域名数量不为 0 时调用接口查询百度收录数

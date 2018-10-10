@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <link rel="stylesheet" href="stylesheets/style.css">
   <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.13.4/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dexie@2.0.4/dist/dexie.min.js"></script>
   <title>Impress</title>
 </head>
 <body>
@@ -30,13 +30,16 @@
             <strong>&nbsp;&nbsp;{{t_dpt_info}}</strong>
           </div>
           <div>
-            <button :disabled="disableDownlad">下载</button>
+            <button :disabled=disableOutput @click="handleOutput">导出</button>
           </div>
         </div>
         <div>
           <ul style="border: 1px solid #dddddd;">
-            <li v-for="log in logs" :class="{error: log.err}">{{log.text}}</li>
-          </ul>
+              <li v-for="log in logs" :class="{error: log.err}">{{log.text}}</li>
+            </ul>
+          </div>
+          <div>
+            <p style="width: 80px; text-align: center;">耗时：{{formattedElapsed}}</p>
         </div>
       </div>
     </div>
@@ -53,10 +56,25 @@
         t_dpt_info: '',
         disableChoose: false,
         disableStart: true,
-        disableDownlad: true,
-        logs: []
+        disableOutput: true,
+        downlaodUrl: '',
+        logs: [],
+        elapsed: 0,
+      },
+      computed: {
+        formattedElapsed: function () {
+          if (this.elapsed < 60) {
+            return `00:${this.makeDouble(this.elapsed)}`;
+
+          } else {
+            return `${this.makeDouble(Math.floor(this.elapsed / 60))}:${this.makeDouble(this.elapsed % 60)}`;
+          }
+        }
       },
       methods: {
+        makeDouble: function (t) {
+          return t < 10 ? `0${t}` : t;
+        },
         handleFileChange: function (e) {
           const id = e.target.id;
           const file = this.$refs[id].files[0];
@@ -67,8 +85,14 @@
             this[id + '_info'] = this.genFileInfo(file.name, file.size);
             
             if (id == 't_data' && file.size > 250000000) {
-              this.pushLog('data 表不能大于 250 MB，请适当删减或拆分');
+              this.pushLog('data 表不能大于 250 MB，请适当删减或拆分', true);
               
+            } else if (id == 't_data' && !/^t_data/.exec(file.name)) {
+              this.pushLog('data 表必须以 t_data 开头', true);
+              
+            } else if (id == 't_dpt' && !/^t_dpt/.exec(file.name)) {
+              this.pushLog('dpt 表必须以 t_dpt 开头', true);
+
             } else if (this.t_data_name && this.t_dpt_name) {
               this.disableStart = false;
             }
@@ -83,10 +107,50 @@
           }
         },
         startMisson: function () {
+          this.elapsed = 0;
           this.disableStart = true;
           this.logs = [];
-          this.pushLog('开始处理...');
-          rebuildDB();
+
+          //设置计时器
+          const itv = setInterval(() => {
+            this.elapsed += 1;
+          }, 1000);
+
+          // 创建 Worker 来处理计算任务，防止主线程卡住
+          const imp = new Worker('scripts/imp.js')
+          imp.onmessage = function (e) {
+            const msg = e.data;
+
+            if (msg == 'terminate') {
+              imp.terminate();
+              clearInterval(itv);
+              this.generateFile();
+
+            } else {
+              this.pushLog(msg);
+            }
+          }.bind(this);
+          
+          // 利用 HTML5 File API 读取文件为 Buffer，转移给 Worker 使用
+          const t_data = app.$refs['t_data'].files[0];
+          const t_dpt = app.$refs['t_dpt'].files[0];
+
+          const t_data_reader = new FileReader();
+    
+          t_data_reader.onload = function (e) {
+            t_data_buffer = e.target.result;
+            imp.postMessage(t_data_buffer, [t_data_buffer]);
+    
+            const t_dpt_reader = new FileReader();
+            t_dpt_reader.onload = function (e) {
+              t_dpt_buffer = e.target.result;
+              imp.postMessage(t_dpt_buffer, [t_dpt_buffer]);
+            };
+    
+            t_dpt_reader.readAsArrayBuffer(t_dpt);
+          };
+    
+          t_data_reader.readAsArrayBuffer(t_data);
         },
         assembleLog: function (text, err) {
           const ct = new Date().toLocaleTimeString('zh-CN', {hour12: false});
@@ -98,6 +162,28 @@
         },
         pushLog: function (text, err = false) {
           this.logs.push(this.assembleLog(text, err));
+        },
+        generateFile: async function () {
+          // 读取本地数据库中已经计算好的数据，创建 csv 并生成 url
+          const db = await new Dexie('newrank').open();
+              db.table('impress')
+                .toArray(function (rows) {
+                  rows = rows.map(row => `\n${row.url_crc}, ${row.impress}`).join('');
+                  const outputBlob = new Blob(['url_crc,impress' + rows]);
+                  this.downlaodUrl = URL.createObjectURL(outputBlob);
+                  this.disableOutput = false;
+                  this.pushLog('🎉计算结束，点击“导出”下载数据进行后续处理');
+                }.bind(this));
+        },
+        handleOutput: function () {
+          
+          // 创建隐藏 a 元素，绑定 url 并触发下载
+          const a = document.createElement('a');
+          a.href = this.downlaodUrl;
+          a.download = 'impress.csv';
+          console.log(a);
+          a.click();
+          URL.revokeObjectURL(this.downlaodUrl);
         }
       },
       created: function () {
@@ -107,244 +193,6 @@
         }
       }
     });
-
-    function rebuildDB () {
-      const DBDeleteRequest = window.indexedDB.deleteDatabase('newrank');
-
-      DBDeleteRequest.onerror = function (e) {
-        app.pushLog('× 清空本地数据库失败');
-        console.log(e);
-      }
-      
-      DBDeleteRequest.onsuccess = function (e) {
-        parseSheet();
-      }
-    }
-
-    function parseSheet () {
-      app.pushLog('解析文件...');
-      const t_data = app.$refs['t_data'].files[0];
-      const t_dpt = app.$refs['t_dpt'].files[0];
-      const t_data_reader = new FileReader();
-      const t_dpt_reader = new FileReader();
-      const datas = {};
-
-      t_data_reader.onload = function (e) {
-        handleOnload(e, 't_data', datas);
-      };
-
-      t_dpt_reader.onload = function (e) {
-        handleOnload(e, 't_dpt', datas );
-      };
-
-      t_data_reader.readAsArrayBuffer(t_data);
-      t_dpt_reader.readAsArrayBuffer(t_dpt);
-    }
-
-    function handleOnload (e, id, datas) {
-      const data = new Uint8Array(e.target.result);
-      const sheet = XLSX.read(data, {type: 'array'}).Sheets.sheet;
-      const matches = /[A-Z]+\d+:([A-Z]+)(\d+)/.exec(sheet['!ref']);
-      const lastCol = matches[1];
-      const rowCount = parseInt(matches[2]);
-
-      const cols = genCols(lastCol);
-      const fields = genFields(cols, sheet);
-      const rows = genRows(id, rowCount, fields, sheet);
-      datas[id] = rows;
-      
-      if (datas.t_data && datas.t_dpt) {
-        app.pushLog('匹配 data/dpt 表...');
-        matchDatas(datas);
-      }
-    }
-
-    function genCols (lastCol) {
-      const baseCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-      const cols = [];
-      let flag = true;
-
-      while (flag) {
-        if (cols.length < 26) {
-          const col = baseCols[cols.length];
-          cols.push(col);
-
-          if (col == lastCol) {
-            flag = false;
-          }
-
-        } else {
-          const tmpCols = cols.slice(-26);
-          for (let i = 0; i < tmpCols.length; i++) {
-            const tmpCol = tmpCols[i];
-            
-            for (let j = 0; j < baseCols.length; j++) {
-              const baseCol = baseCols[j];
-              const col = tmpCol + baseCol;
-              cols.push(col);
-
-              if (col == lastCol) {
-                flag = false;
-                break;
-              }
-            }
-
-            if (!flag) {
-              break;
-            }
-          }
-        }
-      }
-
-      return cols;
-    }
-
-    function genFields (cols, sheet) {
-      const fields = {};
-
-      for (let i = 0; i < cols.length; i++) {
-        const col = cols[i];
-        const key = col + '1';
-        fields[sheet[key].v] = col;
-      }
-
-      return fields;
-    }
-
-    function genRows (id, rowCount, fields, sheet) {
-      const rows = [];
-
-      if (id == 't_data') {
-        const url_crc_key = fields['url_crc'];
-        const url_key = fields['url'];
-        const source_type_key = fields['source_type'];
-        const author_key = fields['author'];
-        const media_name_key = fields['media_name'];
-        const original_media_name_key = fields['original_media_name'];
-        const content_media_name_key = fields['content_media_name'];
-        const source_tags_key = fields['source_tags'];
-
-        for (let i = 2; i <= rowCount; i++) {
-          const row = {};
-          row.url_crc = sheet[url_crc_key + i.toString()].v;
-          row.url = sheet[url_key + i.toString()].v;
-          row.source_type = parseInt(sheet[source_type_key + i.toString()].v);
-          row.author = sheet[author_key + i.toString()] ? sheet[author_key + i.toString()].v : '';
-          row.media_name = sheet[media_name_key + i.toString()].v;
-          row.original_media_name = sheet[original_media_name_key + i.toString()] ? sheet[original_media_name_key + i.toString()].v : '';
-          row.content_media_name = sheet[content_media_name_key + i.toString()] ? sheet[content_media_name_key + i.toString()].v : '';
-          source_tags = sheet[source_tags_key + i.toString()] ? sheet[source_tags_key + i.toString()].v : '';
-
-          if (row.source_type == '0' && source_tags == 'app') {
-            row.source_type = '12';
-          }
-
-          rows.push(row);
-        }
-
-      } else {
-        const url_crc_key = fields['url_crc'];
-        const attitudes_count_key = fields['attitudes_count'];
-        const click_count_key = fields['click_count'];
-        const comments_count_key = fields['comments_count'];
-        const quote_count_key = fields['quote_count'];
-
-        for (let i = 2; i <= rowCount; i++) {
-          const row = {};
-
-          row.url_crc = sheet[url_crc_key + i.toString()].v;
-          row.attitudes_count = sheet[attitudes_count_key + i.toString()] ? parseInt(sheet[attitudes_count_key + i.toString()].v) : 0;
-          row.click_count = sheet[click_count_key + i.toString()] ? parseInt(sheet[click_count_key + i.toString()].v) : 0;
-          row.comments_count = sheet[comments_count_key + i.toString()] ? parseInt(sheet[comments_count_key + i.toString()].v) : 0;
-          row.quote_count = sheet[quote_count_key + i.toString()] ? parseInt(sheet[quote_count_key + i.toString()].v) : 0;
-          
-          rows.push(row);
-        }
-      }
-
-      return rows;
-    }
-
-    function matchDatas (datas) {
-      for (let i = 0; i < datas.t_data.length; i++) {
-        const data = datas.t_data[i];
-        let flag = false;
-        
-        for (let j = 0; j < datas.t_dpt.length; j++) {
-          const dpt = datas.t_dpt[j];
-          
-          if (data.url_crc == dpt.url_crc) {
-            data.attitudes_count = dpt.attitudes_count;
-            data.click_count = dpt.click_count;
-            data.comments_count = dpt.comments_count;
-            data.quote_count = dpt.quote_count;
-            flag = true;
-            break;
-          }
-        }
-
-        if (!flag) {
-          data.attitudes_count = 0;
-          data.click_count = 0;
-          data.comments_count = 0;
-          data.quote_count = 0;
-        }
-      }
-
-      app.pushLog('写入数据库...');
-      insertDB(datas.t_data);
-    }
-    
-    function insertDB (datas) {
-      const request = window.indexedDB.open('newrank', 1);
-      
-      request.onerror = function (e) {
-        app.pushLog('打开本地数据库失败，请刷新重试', true);
-        console.log(e);
-      }
-
-      request.onupgradeneeded = function (e) {
-        const db = e.target.result;
-        const objectStore = db.createObjectStore('impress', {keyPath: 'url_crc'});
-
-        objectStore.createIndex('source_type', 'source_type', {unique: false});
-        objectStore.createIndex('click_count', 'click_count', {unique: false});
-        objectStore.createIndex('comments_count', 'comments_count', {unique: false});
-        
-        objectStore.transaction.oncomplete = function (e) {
-          const transaction = db.transaction('impress', 'readwrite');
-          const impressObjectStore = transaction.objectStore('impress');
-
-          transaction.onerror = function (e) {
-            app.pushLog('写入数据库失败', true);
-          }
-
-          transaction.oncomplete = function (e) {
-            db.close();
-            lanchImp();
-          }
-          
-          datas.forEach(function (data) {
-            impressObjectStore.add(data);
-          });
-        }
-      }
-    }
-
-    function lanchImp () {
-      const imp = new Worker('../scripts/imp.js');
-
-      imp.onmessage = function (e) {
-        const msg = e.data;
-
-        if (typeof msg == 'string') {
-          app.pushLog(msg);
-
-        } else {
-          app.pushLog(msg.text, msg.flag);
-        }
-      }
-    }
   </script>
 </body>
 </html>

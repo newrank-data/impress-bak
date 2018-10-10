@@ -40,7 +40,7 @@ module.exports = function () {
         } else {
           setTimeout(() => {
             collectRecords(i + 1, inserts);
-          }, 5000);
+          }, 10000);
         }
       });
     }
