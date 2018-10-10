@@ -5,7 +5,7 @@ const generateRef = require('../scripts/generate_ref.js');
 
 router.get('/', (req, res) => {
   try {
-    const ref = fs.readFileSync('public/files/ref.json');
+    const ref = fs.readFileSync('public/ref.json');
     res.status(200).type('application/json').send(ref);
 
   } catch (err) {

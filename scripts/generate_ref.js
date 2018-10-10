@@ -35,7 +35,7 @@ module.exports = function (callback) {
         };
         
         db.close();
-        fs.writeFileSync('public/files/ref.json', JSON.stringify(ref));
+        fs.writeFileSync('public/ref.json', JSON.stringify(ref));
         callback({
           status: 1,
           ref: ref
