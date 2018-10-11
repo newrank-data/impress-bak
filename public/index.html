@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="stylesheets/style.css">
   <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dexie@2.0.4/dist/dexie.min.js"></script>
-  <title>Impress</title>
+  <title>impress</title>
 </head>
 <body>
   <div class="layout-center_h">
@@ -110,6 +110,7 @@
           this.elapsed = 0;
           this.disableStart = true;
           this.logs = [];
+          URL.revokeObjectURL(this.downlaodUrl);
 
           //设置计时器
           const itv = setInterval(() => {
@@ -171,11 +172,11 @@
           const db = await new Dexie('newrank').open();
           db.table('impress')
           .toArray(function (rows) {
-            rows = rows.map(row => `\n${row.url_crc}, ${row.impress}`).join('');
-            const outputBlob = new Blob(['url_crc,impress' + rows]);
+            rows = rows.map(row => `\n${row.url_crc}, ${row.url}, ${row.click_count}, ${row.comments_count}, ${row.attitudes_count}, ${row.quote_count}, ${row.hostname}, ${row.impress}`).join(',');
+            const outputBlob = new Blob(['url_crc,url,click_count,comments_count,attitudes_count,quote_count,hostname,impress' + rows]);
             this.downlaodUrl = URL.createObjectURL(outputBlob);
             this.disableOutput = false;
-            this.pushLog('🎉计算结束，点击“导出”下载数据进行后续处理');
+            this.pushLog('🎉计算结束，请点击“导出”下载数据进行后续处理');
           }.bind(this));
         },
         handleOutput: function () {
@@ -185,7 +186,6 @@
           a.href = this.downlaodUrl;
           a.download = 'impress.csv';
           a.click();
-          URL.revokeObjectURL(this.downlaodUrl);
         }
       },
       created: function () {
