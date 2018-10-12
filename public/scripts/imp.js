@@ -239,7 +239,7 @@ function calculateWeibo () {
     .toArray(rows => {
       postMessage(`计算 source_type = 4 的记录，共 ${rows.length} 条`);
       rows.forEach(row => {
-        row.impress = Math.round(Math.max(94, row.quote_count, row.comments_count * 90, row.attitudes_count / 0.00014 / 37.68));
+        row.impress = Math.round(Math.max(94, row.quote_count, row.comments_count * 90, row.attitudes_count / 0.00014 / 37.86));
       });
 
       impDB.impress
