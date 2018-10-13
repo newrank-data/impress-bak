@@ -293,7 +293,7 @@ function calculateNotApp () {
   impDB.impress
     .orderBy('domain')
     .toArray(rows => {
-      rows = rows.filter(row => row.source_type != 12 && row.click_count === 0);
+      rows = rows.filter(row => row.source_type != 12 && row.source_type != 4 && row.click_count === 0);
       postMessage(`计算 source_type = 0/1/2/3/5/6 的记录，共 ${rows.length} 条`);
       let currentDetails = {domain: ''};
       let lastDomain = '';
@@ -385,7 +385,7 @@ function calculateApp () {
   impDB.impress
     .where({source_type: 12})
     .toArray(rows => {
-      rows.filter(row => row.impress === 0 && row.click_count === 0);
+      rows = rows.filter(row => row.impress === 0 && row.click_count === 0);
       postMessage(`计算 source_type = 12 的记录，共 ${rows.length} 条`);
       rows.forEach(row => {
         row.impress = row.domain == 'toutiao.com' ? 150 : 40;
