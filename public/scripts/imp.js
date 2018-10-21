@@ -326,7 +326,7 @@ function calculateNotApp () {
             }
             
           } else {
-            row.impress = 10;
+            row.impress = Math.max(row.impress, 10);
             alexaNotFound.push(row.domain);
             lastDomain = row.domain;
             i += 1;
@@ -426,16 +426,20 @@ function matchDomianDetails (row, details) {
     row.impress = Math.max(details.impress, row.impress, 10);
 
   } else {
+    let flag = false;
     for (let i = 0; i < subdomains.length; i++) {
       const sub = subdomains[i];
       
       // 子域名匹配成功时使用对应子域名的值
       if (row.hostname == sub.subdomain) {
         row.impress = Math.max(sub.impress, row.impress, 10);
+        flag = true;
         break;
       }
-
-      // 子域名匹配失败时使用主域名最小值
+    }
+    
+    // 子域名匹配失败时使用主域名最小值
+    if (!flag) {
       row.impress = Math.max(details.minImpress, row.impress, 10);
     }
   }
