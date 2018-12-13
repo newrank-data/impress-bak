@@ -80,6 +80,7 @@ function genCols (lastCol) {
     }
   }
 
+  console.log('finish genCols');
   return cols;
 }
 
@@ -93,7 +94,7 @@ function genFields (cols, sheet) {
     const key = col + '1';
     fields[sheet[key].v] = col;
   }
-
+  console.log('finish genFields');
   return fields;
 }
 
@@ -118,7 +119,7 @@ function genRows (type, rowCount, fields, sheet) {
       row.url = sheet[url_key + i.toString()].v;
       row.source_type = parseInt(sheet[source_type_key + i.toString()].v);
       row.author = sheet[author_key + i.toString()] ? sheet[author_key + i.toString()].v : '';
-      row.media_name = sheet[media_name_key + i.toString()].v;
+      row.media_name = sheet[media_name_key + i.toString()] ? sheet[media_name_key + i.toString()].v : '';
       row.original_media_name = sheet[original_media_name_key + i.toString()] ? sheet[original_media_name_key + i.toString()].v : '';
       row.content_media_name = sheet[content_media_name_key + i.toString()] ? sheet[content_media_name_key + i.toString()].v : '';
       source_tags = sheet[source_tags_key + i.toString()] ? sheet[source_tags_key + i.toString()].v : '';
@@ -150,7 +151,7 @@ function genRows (type, rowCount, fields, sheet) {
       rows.push(row);
     }
   }
-
+  console.log('finish genRows');
   return rows;
 }
 
@@ -198,7 +199,7 @@ function extractDomian(datas) {
       v.hostname = extraction.hostname;
       
     } else {
-      postMessage(`url_crc = ${v.url_crc} 的记录不包含有效域名`, true)
+      console.log(`url_crc = ${v.url_crc} 的记录不包含有效域名`);
     }
     return v;
   });
