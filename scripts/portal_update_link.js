@@ -19,7 +19,7 @@ module.exports = function () {
           .end((err, reply) => {
 
             if (!err) {
-              const link_num = reply.text.match(re).length;
+              const link_num = reply.text.match(re) ? reply.text.match(re).length : 0;
               
               db.collection('portals').findOne({site: site}, (err, doc) => {
 
